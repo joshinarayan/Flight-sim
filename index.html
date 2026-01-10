@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Dream Flight Simulator</title>
+
+  <!-- Cesium CSS -->
+  <link
+    href="https://unpkg.com/cesium@1.114/Build/Cesium/Widgets/widgets.css"
+    rel="stylesheet"
+  />
+
+  <style>
+    html, body, #cesiumContainer {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: black;
+      touch-action: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 🌍 Google-Earth-style World -->
+  <div id="cesiumContainer"></div>
+
+  <!-- Cesium JS -->
+  <script src="https://unpkg.com/cesium@1.114/Build/Cesium/Cesium.js"></script>
+
+  <!-- Your Game Logic -->
+  <script src="script.js"></script>
+</body>
+</html>
