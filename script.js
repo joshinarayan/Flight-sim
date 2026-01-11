@@ -1,167 +1,148 @@
-Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3MGIyZDMxZC0xM2ViLTQ3MTAtYmFkZi0xMGYzYzRiNDhlZmYiLCJpZCI6Mzc3MDY1LCJpYXQiOjE3NjgwNTM4NjR9.JVS-lq2ULJZS2ob7xHmtyc0BFaxp9V1WxEgkxql2Rf4";
+// ===== SCENE =====
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
 
-const viewer = new Cesium.Viewer("cesiumContainer", {
-  terrain: Cesium.Terrain.fromWorldTerrain(),
-  timeline: false,
-  animation: false,
-  shouldAnimate: true
-});
+// ===== CAMERA =====
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 10000);
+camera.position.set(0, 5, 12);
 
-viewer.scene.globe.enableLighting = true;
-viewer.scene.fog.enabled = true;
-viewer.scene.skyAtmosphere.show = true;
+// ===== RENDERER =====
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// ===== LIGHT =====
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+const sun = new THREE.DirectionalLight(0xffffff, 1);
+sun.position.set(10, 20, 10);
+scene.add(sun);
+
+// ===== GROUND =====
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(5000, 5000),
+  new THREE.MeshStandardMaterial({ color: 0x228b22 })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+// ===== RUNWAY =====
+const runway = new THREE.Mesh(
+  new THREE.BoxGeometry(300, 1, 20),
+  new THREE.MeshStandardMaterial({ color: 0x333333 })
+);
+runway.position.y = 0.5;
+scene.add(runway);
+
+// ===== PLANE (PROCEDURAL) =====
+const plane = new THREE.Group();
+
+// body
+plane.add(new THREE.Mesh(
+  new THREE.BoxGeometry(2, 0.5, 6),
+  new THREE.MeshStandardMaterial({ color: 0xff3333 })
+));
+
+// wings
+const wing = new THREE.Mesh(
+  new THREE.BoxGeometry(8, 0.1, 1.5),
+  new THREE.MeshStandardMaterial({ color: 0x555555 })
+);
+plane.add(wing);
+
+// tail
+const tail = new THREE.Mesh(
+  new THREE.BoxGeometry(0.5, 1, 1),
+  new THREE.MeshStandardMaterial({ color: 0x666666 })
+);
+tail.position.set(0, 0.8, -2.5);
+plane.add(tail);
+
+plane.position.set(0, 1, 0);
+scene.add(plane);
 
 // ===== STATE =====
-let heading = 0;
+let speed = 0;
+let throttle = 0.02;
 let pitch = 0;
 let roll = 0;
-let speed = 130;
 let alive = true;
-let camMode = 0;
-
-// ===== POSITION =====
-let position = Cesium.Cartesian3.fromDegrees(77.209, 28.6139, 2500);
-
-// ===== ORIENTATION =====
-function getOrientation() {
-  return Cesium.Transforms.headingPitchRollQuaternion(
-    position,
-    new Cesium.HeadingPitchRoll(heading, pitch, roll)
-  );
-}
-
-// ===== PROCEDURAL PLANE =====
-const plane = viewer.entities.add({
-  position: new Cesium.CallbackProperty(() => position, false),
-  orientation: new Cesium.CallbackProperty(getOrientation, false),
-
-  box: {
-    dimensions: new Cesium.Cartesian3(6, 1, 1),
-    material: Cesium.Color.GRAY
-  }
-});
-
-// ===== WINGS =====
-viewer.entities.add({
-  position: plane.position,
-  orientation: plane.orientation,
-  box: {
-    dimensions: new Cesium.Cartesian3(1, 10, 0.2),
-    material: Cesium.Color.DARKGRAY
-  }
-});
-
-// ===== TAIL =====
-viewer.entities.add({
-  position: plane.position,
-  orientation: plane.orientation,
-  box: {
-    dimensions: new Cesium.Cartesian3(0.5, 1, 2),
-    material: Cesium.Color.DIMGRAY
-  }
-});
-
-viewer.trackedEntity = plane;
 
 // ===== JOYSTICK =====
-const joy = document.createElement("div");
-joy.style.cssText = `
-  position: fixed;
-  bottom: 20px; left: 20px;
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.15);
-`;
-document.body.appendChild(joy);
-
 let joyX = 0, joyY = 0;
-joy.addEventListener("touchmove", e => {
-  const r = joy.getBoundingClientRect();
-  const t = e.touches[0];
-  joyX = ((t.clientX - r.left) / r.width - 0.5) * 2;
-  joyY = ((t.clientY - r.top) / r.height - 0.5) * 2;
+window.addEventListener("touchmove", e => {
+  joyX = (e.touches[0].clientX / innerWidth - 0.5) * 2;
+  joyY = (e.touches[0].clientY / innerHeight - 0.5) * 2;
 });
 
-// ===== CAMERA MODES =====
-document.addEventListener("dblclick", () => {
-  camMode = (camMode + 1) % 4;
-});
-
-// ===== SOUND =====
-const ctx = new AudioContext();
-const engine = ctx.createOscillator();
-engine.type = "sawtooth";
-engine.frequency.value = 120;
-engine.connect(ctx.destination);
-engine.start();
-document.body.addEventListener("touchstart", () => ctx.resume(), { once: true });
+// ===== CLOUDS =====
+for (let i = 0; i < 30; i++) {
+  const cloud = new THREE.Mesh(
+    new THREE.SphereGeometry(10, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffffff })
+  );
+  cloud.position.set(
+    (Math.random() - 0.5) * 2000,
+    100 + Math.random() * 300,
+    (Math.random() - 0.5) * 2000
+  );
+  scene.add(cloud);
+}
 
 // ===== HUD =====
-const hud = document.createElement("div");
-hud.style.cssText = `
-  position: fixed;
-  top: 10px; left: 10px;
-  color: #0f0;
-  background: rgba(0,0,0,.6);
-  padding: 8px;
-  font-family: monospace;
-`;
-document.body.appendChild(hud);
+const hud = document.getElementById("hud");
 
-// ===== DAY / NIGHT =====
-let night = false;
-setInterval(() => {
-  night = !night;
-  viewer.scene.light = night
-    ? new Cesium.DirectionalLight({
-        direction: new Cesium.Cartesian3(0.5, 0.5, -1)
-      })
-    : new Cesium.SunLight();
-}, 30000);
-
-// ===== MAIN LOOP =====
-viewer.clock.onTick.addEventListener(() => {
+// ===== LOOP =====
+function animate() {
+  requestAnimationFrame(animate);
   if (!alive) return;
 
-  heading -= joyX * 0.04;
-  pitch   -= joyY * 0.04;
-  pitch = Cesium.Math.clamp(pitch, -1.2, 0.6);
+  // controls
+  pitch -= joyY * 0.002;
+  roll  -= joyX * 0.002;
 
-  const forward = new Cesium.Cartesian3(
-    Math.sin(heading),
-    Math.cos(heading),
-    Math.sin(pitch)
+  pitch = THREE.MathUtils.clamp(pitch, -0.5, 0.5);
+  roll  = THREE.MathUtils.clamp(roll, -0.8, 0.8);
+
+  plane.rotation.set(pitch, roll, 0);
+
+  // throttle + gravity
+  speed += throttle;
+  speed -= 0.01; // drag
+  if (speed < 0) speed = 0;
+
+  // movement
+  plane.translateZ(-speed);
+
+  // gravity
+  plane.position.y -= 0.03 - pitch * 0.1;
+
+  // camera follow
+  camera.position.lerp(
+    plane.position.clone().add(new THREE.Vector3(0, 5, 12)),
+    0.08
   );
-  Cesium.Cartesian3.normalize(forward, forward);
+  camera.lookAt(plane.position);
 
-  position = Cesium.Cartesian3.add(
-    position,
-    Cesium.Cartesian3.multiplyByScalar(forward, speed, new Cesium.Cartesian3()),
-    new Cesium.Cartesian3()
-  );
-
-  const carto = Cesium.Cartographic.fromCartesian(position);
-  const ground = viewer.scene.globe.getHeight(carto) || 0;
-  const alt = carto.height;
-
-  engine.frequency.value = 100 + speed;
-
-  // ===== CAMERA =====
-  if (camMode === 0) viewer.trackedEntity = plane;
-  if (camMode === 1) viewer.camera.zoomOut(600);
-  if (camMode === 2) viewer.camera.rotateRight(0.003);
-  if (camMode === 3) viewer.camera.lookUp(0.002);
-
-  // ===== LAND / CRASH =====
-  if (alt < ground + 30) {
-    if (speed < 150 && Math.abs(pitch) < 0.2) {
+  // landing / crash
+  if (plane.position.y < 1) {
+    if (speed < 1.2) {
       hud.innerHTML = "🛬 LANDED";
-      alive = false;
     } else {
       hud.innerHTML = "💥 CRASH";
-      alive = false;
     }
+    alive = false;
   } else {
-    hud.innerHTML = `SPD ${speed}<br>ALT ${Math.round(alt)}`;
+    hud.innerHTML = `SPD ${speed.toFixed(1)}<br>ALT ${plane.position.y.toFixed(0)}`;
   }
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// resize
+window.addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
 });
