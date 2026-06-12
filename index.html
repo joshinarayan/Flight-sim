@@ -1,36 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Dream Flight</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #87ceeb;
-      touch-action: none;
-    }
+<title>Dream Flight Demo</title>
 
-    #hud {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      color: #0f0;
-      background: rgba(0,0,0,.6);
-      padding: 8px;
-      font-family: monospace;
-      z-index: 10;
-    }
-  </style>
+<style>
+html,body{
+    margin:0;
+    overflow:hidden;
+    background:black;
+}
+
+canvas{
+    display:block;
+}
+
+#hud{
+    position:fixed;
+    top:10px;
+    left:10px;
+    color:#00ff88;
+    font-family:monospace;
+    background:rgba(0,0,0,.5);
+    padding:10px;
+    z-index:10;
+    line-height:1.4;
+}
+
+#controls{
+    position:fixed;
+    bottom:10px;
+    left:10px;
+    color:white;
+    font-family:sans-serif;
+    background:rgba(0,0,0,.5);
+    padding:8px;
+}
+</style>
 </head>
+
 <body>
 
-<div id="hud">SPD 0<br>ALT 0</div>
+<div id="hud"></div>
+
+<div id="controls">
+W/S Pitch<br>
+A/D Roll<br>
+Q/E Throttle
+</div>
 
 <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
 <script src="script.js"></script>
+
 </body>
 </html>
